@@ -1,0 +1,23 @@
+/* Simple auth pages style */
+body{
+  margin:0; background:#f5f6f8; font-family: ui-sans-serif, system-ui, "Noto Sans Thai", sans-serif;
+}
+.auth-wrap{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  background: linear-gradient(120deg, #f43f5e22, #8b5cf622);
+}
+.card{
+  width: 420px; max-width:100%;
+  background:#fff; border-radius:14px; padding:22px;
+  box-shadow:0 15px 35px rgba(0,0,0,.08);
+}
+.card h2{margin:0 0 4px}
+.card p{margin:0 0 16px; color:#6b7280}
+label{display:block; margin:10px 0 6px}
+input, select{
+  width:100%; padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff;
+}
+.btn{margin-top:14px; width:100%; border:0; padding:10px 14px; border-radius:10px; cursor:pointer; color:#fff; font-weight:600}
+.btn-primary{background:#2563eb}
+.btn-secondary{background:#6b7280}
+a{color:#2563eb; text-decoration:none}

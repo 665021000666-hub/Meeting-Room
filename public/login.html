@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เข้าสู่ระบบ | ระบบจองห้องประชุม</title>
+
+  <!-- ✅ ฟอนต์และสไตล์ -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #ffe6f0, #f8e9f2);
+      font-family: "Prompt", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px 50px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 350px;
+      text-align: center;
+      transition: 0.3s;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+    }
+
+    .btn-blue, .btn-pink {
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      transition: 0.3s;
+    }
+
+    .btn-blue { background-color: #007bff; }
+    .btn-blue:hover { background-color: #0056b3; }
+    .btn-pink { background-color: #f06292; }
+    .btn-pink:hover { background-color: #ec407a; }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-container" id="loginBox">
+    <h2>เข้าสู่ระบบ</h2>
+    <p>กรอกชื่อผู้ใช้และรหัสผ่าน</p>
+
+    <input type="text" id="loginUsername" placeholder="ชื่อผู้ใช้ (Username)" />
+    <input type="password" id="loginPassword" placeholder="รหัสผ่าน" />
+    <button id="loginBtn" class="btn-blue">เข้าสู่ระบบ</button>
+
+    <p>ยังไม่มีบัญชี? <a id="showRegister">สมัครสมาชิก</a></p>
+  </div>
+
+  <!-- 🔹 กล่องสมัครสมาชิก (ซ่อนตอนเริ่มต้น) -->
+  <div class="login-container" id="registerBox" style="display:none;">
+    <h2>สมัครสมาชิก</h2>
+    <p>สร้างบัญชีใหม่</p>
+
+    <input type="text" id="regUsername" placeholder="ชื่อผู้ใช้ (Username)" />
+    <input type="password" id="regPassword" placeholder="รหัสผ่าน" />
+    <input type="password" id="regConfirm" placeholder="ยืนยันรหัสผ่าน" />
+    <button id="registerBtn" class="btn-pink">สมัครสมาชิก</button>
+
+    <p>มีบัญชีแล้ว? <a id="showLogin">เข้าสู่ระบบ</a></p>
+  </div>
+
+  <!-- ✅ Script ระบบ Login + Register -->
+  <script>
+    // 🔸 Toggle แสดง/ซ่อนกล่อง
+    const loginBox = document.getElementById("loginBox");
+    const registerBox = document.getElementById("registerBox");
+    document.getElementById("showRegister").addEventListener("click", () => {
+      loginBox.style.display = "none";
+      registerBox.style.display = "block";
+    });
+    document.getElementById("showLogin").addEventListener("click", () => {
+      registerBox.style.display = "none";
+      loginBox.style.display = "block";
+    });
+
+    // 🧱 ถ้ามี user อยู่แล้ว → ข้าม login
+    //-----------------------//
+    //        Role           //
+    //-----------------------//
+    document.addEventListener("DOMContentLoaded", () => {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.role === "admin") {
+            window.location.replace("/admin_index.html");
+          } else {
+            window.location.replace("/index.html");
+          }
+        } catch {
+          localStorage.removeItem("user");
+        }
+      }
+    });
+
+    // 🚪 เข้าสู่ระบบ
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+
+      // admin พิเศษ
+      if (username === "admin" && password === "123456") {
+        const user = { username, role: "admin" };
+        localStorage.setItem("user", JSON.stringify(user));
+        window.location.replace("/admin_index.html");
+        return;
+      }
+
+      const found = users.find(u => u.username === username && u.password === password);
+      if (found) {
+        localStorage.setItem("user", JSON.stringify(found));
+        window.location.replace("/index.html");
+      } else {
+        alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+      }
+    });
+
+    // 🩷 สมัครสมาชิก
+    document.getElementById("registerBtn").addEventListener("click", () => {
+      const username = document.getElementById("regUsername").value.trim();
+      const password = document.getElementById("regPassword").value.trim();
+      const confirm = document.getElementById("regConfirm").value.trim();
+
+      if (!username || !password || !confirm) {
+        alert("กรุณากรอกข้อมูลให้ครบ");
+        return;
+      }
+
+      if (password !== confirm) {
+        alert("รหัสผ่านไม่ตรงกัน");
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+      if (users.find(u => u.username === username)) {
+        alert("ชื่อผู้ใช้นี้มีอยู่แล้ว");
+        return;
+      }
+
+      users.push({ username, password, role: "user" });
+      localStorage.setItem("registeredUsers", JSON.stringify(users));
+      alert("สมัครสมาชิกสำเร็จ! โปรดเข้าสู่ระบบ");
+      registerBox.style.display = "none";
+      loginBox.style.display = "block";
+    });
+
+    // 🔒 ปิด cache
+    (() => {
+      const meta1 = document.createElement("meta");
+      meta1.httpEquiv = "Cache-Control";
+      meta1.content = "no-store, no-cache, must-revalidate, max-age=0";
+      document.head.appendChild(meta1);
+    })();
+  </script>
+</body>
+</html>

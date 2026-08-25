@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบจองห้องประชุม</title>
+
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="header">
+    <h2>📅 ระบบจองห้องประชุม</h2>
+    <button id="logoutBtn" class="logout-btn">ออกจากระบบ</button>
+  </header>
+
+  <main>
+    <div class="selectors">
+      <select id="buildingSelect"><option value="">เลือกอาคาร</option></select>
+      <select id="floorSelect"><option value="">เลือกชั้น</option></select>
+      <select id="roomSelect"><option value="">เลือกห้องประชุม</option></select>
+      <button id="checkStatusBtn" class="btn btn-green">ตรวจสอบสถานะห้อง</button>
+      <button id="addBookingBtn" class="btn btn-blue">+ จองห้องประชุม</button>
+    </div>
+
+    <div id="calendar" class="calendar"></div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modal-backdrop" style="display:none;"></div>
+  <div id="bookingModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>จองห้องประชุม</h3>
+
+      <label>วันที่เริ่มต้น:</label>
+      <input type="date" id="startDate" />
+      <label>เวลาเริ่มต้น:</label>
+      <select id="startTime"></select>
+
+      <label>วันที่สิ้นสุด:</label>
+      <input type="date" id="endDate" />
+      <label>เวลาสิ้นสุด:</label>
+      <select id="endTime"></select>
+
+      <div class="modal-actions">
+        <button id="saveBookingBtn" class="btn btn-success">บันทึก</button>
+        <button id="cancelBookingBtn" class="btn btn-danger">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+  <!-- 🔐 Security Script -->
+  <script>
+    // 🔒 ป้องกันเข้าโดยตรง (ต้องล็อกอินก่อนถึงเข้าได้)
+    document.addEventListener("DOMContentLoaded", () => {
+      const userData = localStorage.getItem("user");
+      if (!userData) {
+        window.location.replace("/login.html");
+        return;
+      }
+
+      try {
+        const user = JSON.parse(userData);
+        if (!user || !user.username) {
+          localStorage.removeItem("user");
+          window.location.replace("/login.html");
+        }
+      } catch (err) {
+        localStorage.removeItem("user");
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🚪 ปุ่มออกจากระบบ
+    document.addEventListener("click", (e) => {
+      if (e.target.id === "logoutBtn") {
+        // ลบข้อมูลผู้ใช้
+        localStorage.removeItem("user");
+
+        // ล้าง cache / service worker (กันย้อน)
+        if ("caches" in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+
+        // ป้องกันย้อนกลับ
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", () => window.location.replace("/login.html"));
+
+        // ไปหน้า login (replace เพื่อไม่เก็บใน history)
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🧱 ป้องกันโหลดจาก cache (เช่น Back หรือ Reload)
+    window.addEventListener("pageshow", (event) => {
+      const user = localStorage.getItem("user");
+      const navType = performance.getEntriesByType("navigation")[0]?.type;
+      if (!user || event.persisted || navType === "back_forward") {
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🚫 ปิด cache หน้านี้
+    (() => {
+      const meta1 = document.createElement("meta");
+      meta1.httpEquiv = "Cache-Control";
+      meta1.content = "no-store, no-cache, must-revalidate, max-age=0";
+      document.head.appendChild(meta1);
+
+      const meta2 = document.createElement("meta");
+      meta2.httpEquiv = "Pragma";
+      meta2.content = "no-cache";
+      document.head.appendChild(meta2);
+
+      const meta3 = document.createElement("meta");
+      meta3.httpEquiv = "Expires";
+      meta3.content = "0";
+      document.head.appendChild(meta3);
+    })();
+  </script>
+</body>
+</html>

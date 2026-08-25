@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | ระบบจองห้องประชุม</title>
+
+  <!-- FullCalendar -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- JS -->
+  <script src="admin_script.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <h2>📅 ระบบจองห้องประชุม (Admin)</h2>
+    <button id="logoutBtn" class="logout-btn">ออกจากระบบ</button>
+  </header>
+
+  <main>
+    <div class="selectors">
+      <select id="buildingSelect"><option value="">เลือกอาคาร</option></select>
+      <select id="floorSelect"><option value="">เลือกชั้น</option></select>
+      <select id="roomSelect"><option value="">เลือกห้องประชุม</option></select>
+      <button id="checkStatusBtn" class="btn btn-green">ตรวจสอบ</button>
+      <button id="addBookingBtn" class="btn btn-blue">+ จองห้องประชุม</button>
+      <button id="manageBookingsBtn" class="btn btn-gray">🗂 จัดการการจอง</button>
+      <button id="approveBookingsBtn" class="btn btn-yellow"> อนุมัติการจอง</button>
+    </div>
+
+    <div id="calendar" class="calendar"></div>
+  </main>
+
+  <!-- Modal จอง -->
+  <div id="modalBackdrop" class="modal-backdrop"></div>
+  <div id="bookingModal" class="modal">
+    <div class="modal-content">
+      <h3>จองห้องประชุม</h3>
+      <label>วันที่เริ่มต้น</label><input type="date" id="startDate">
+      <label>เวลาเริ่มต้น</label><select id="startTime"></select>
+      <label>วันที่สิ้นสุด</label><input type="date" id="endDate">
+      <label>เวลาสิ้นสุด</label><select id="endTime"></select>
+      <div class="modal-actions">
+        <button id="saveBookingBtn" class="btn btn-success">บันทึก</button>
+        <button id="cancelBookingBtn" class="btn btn-danger">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal จัดการ -->
+  <div id="manageModal" class="modal">
+    <div class="modal-content wide">
+      <h3>🗂 จัดการการจอง</h3>
+      <table id="bookingsTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>อาคาร</th><th>ชั้น</th><th>ห้อง</th>
+            <th>เริ่ม</th><th>สิ้นสุด</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="modal-actions">
+        <button id="closeManageBtn" class="btn btn-danger">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+
+  
+
+
+  
+  <!-- ✅ Security Script -->
+  <script>
+    // 🧱 ป้องกันเข้าหน้านี้โดยตรง (เฉพาะผู้ที่ล็อกอินและเป็น Admin)
+    document.addEventListener("DOMContentLoaded", () => {
+      const userData = localStorage.getItem("user");
+      if (!userData) {
+        window.location.replace("/login.html");
+        return;
+      }
+
+      try {
+        const user = JSON.parse(userData);
+        if (!user || user.role !== "admin") { // ✅ ตรวจ role admin เท่านั้น
+          localStorage.removeItem("user");
+          window.location.replace("/login.html");
+        }
+      } catch (err) {
+        localStorage.removeItem("user");
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🚪 ออกจากระบบ
+    document.addEventListener("click", (e) => {
+      if (e.target.id === "logoutBtn") {
+        // 1. ลบข้อมูลผู้ใช้
+        localStorage.removeItem("user");
+
+        // 2. ล้าง cache และ service worker
+        if ("caches" in window) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        if ("serviceWorker" in navigator)
+          navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+
+        // 3. ป้องกันย้อนกลับ
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", () => window.location.replace("/login.html"));
+
+        // 4. ไปหน้า login
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🧩 ป้องกันการโหลดจาก cache หรือ back-forward cache
+    window.addEventListener("pageshow", (event) => {
+      const user = localStorage.getItem("user");
+      const navType = performance.getEntriesByType("navigation")[0]?.type;
+      if (!user || event.persisted || navType === "back_forward") {
+        window.location.replace("/login.html");
+      }
+    });
+
+    // 🚫 ปิดการแคช
+    (() => {
+      const meta1 = document.createElement("meta");
+      meta1.httpEquiv = "Cache-Control";
+      meta1.content = "no-store, no-cache, must-revalidate, max-age=0";
+      document.head.appendChild(meta1);
+
+      const meta2 = document.createElement("meta");
+      meta2.httpEquiv = "Pragma";
+      meta2.content = "no-cache";
+      document.head.appendChild(meta2);
+
+      const meta3 = document.createElement("meta");
+      meta3.httpEquiv = "Expires";
+      meta3.content = "0";
+      document.head.appendChild(meta3);
+    })();
+  </script>
+</body>
+</html>
